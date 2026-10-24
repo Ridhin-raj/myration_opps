@@ -1,0 +1,487 @@
+/* ============================================
+   DASHBOARD STYLES (Shopkeeper, Admin, User)
+   ============================================ */
+
+/* ---- SIDEBAR LAYOUT ---- */
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar {
+  width: 16rem;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-brand-icon {
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.sidebar-brand span {
+  font-weight: 800;
+  font-size: 0.9375rem;
+  color: var(--primary);
+}
+
+.sidebar-nav {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.sidebar-link:hover {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.sidebar-link.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25);
+}
+
+.sidebar-link.active svg {
+  color: #fff !important;
+}
+
+.sidebar-footer {
+  padding: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ---- TOPBAR ---- */
+.topbar {
+  height: 3.5rem;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  flex-shrink: 0;
+}
+
+.topbar-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ---- MAIN AREA ---- */
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  overflow: hidden;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+/* ---- USER DASHBOARD (NO SIDEBAR) ---- */
+.user-dashboard {
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.user-dash-header {
+  background: linear-gradient(135deg, var(--primary), #1e40af);
+  color: #fff;
+  padding: 2rem 1rem 3rem;
+}
+
+.user-dash-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.user-dash-hello {
+  font-size: 0.875rem;
+  opacity: 0.85;
+}
+
+.user-dash-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-top: 0.25rem;
+}
+
+.user-dash-cards {
+  max-width: 1200px;
+  margin: -1.5rem auto 2rem;
+  padding: 0 1rem;
+}
+
+.user-dash-body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+/* ---- SHOP STATUS TOGGLE ---- */
+.shop-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.status-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.open {
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(5, 150, 105, 0.4);
+}
+
+.status-dot.closed {
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.4);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  width: 2.75rem;
+  height: 1.5rem;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--border);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+  outline: none;
+}
+
+.toggle-switch::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.toggle-switch:checked {
+  background: var(--success);
+}
+
+.toggle-switch:checked::before {
+  transform: translateX(1.25rem);
+}
+
+/* ---- STOCK ITEM ROW ---- */
+.stock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--secondary);
+}
+
+.stock-row:last-child {
+  border: none;
+}
+
+.stock-bar-track {
+  width: 120px;
+  height: 6px;
+  background: var(--secondary);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.stock-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+.stock-bar-fill.good {
+  background: var(--success);
+}
+
+.stock-bar-fill.low {
+  background: var(--warning);
+}
+
+.stock-bar-fill.critical {
+  background: var(--danger);
+}
+
+/* ---- QUOTA TABLE ---- */
+.quota-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--secondary);
+  font-size: 0.875rem;
+}
+
+.quota-item:last-child {
+  border: none;
+}
+
+.quota-item-name {
+  font-weight: 700;
+}
+
+.quota-item-qty {
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.quota-item-price {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* ---- SLOT BOOKING ---- */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.5rem;
+}
+
+.slot-btn {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.slot-btn:hover {
+  border-color: var(--primary-light);
+  background: var(--primary-bg);
+}
+
+.slot-btn.booked {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff;
+  border-color: transparent;
+}
+
+.slot-btn.unavailable {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---- COMPLAINTS ---- */
+.complaint-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+  transition: box-shadow 0.2s;
+}
+
+.complaint-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.complaint-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* ---- QUOTA ALLOCATION FORM ---- */
+.alloc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+@media (max-width: 768px) {
+  .alloc-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.alloc-card {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.alloc-card h4 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.alloc-card .form-group {
+  margin-bottom: 0.75rem;
+}
+
+/* ---- TABS ---- */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.tab-btn:hover {
+  color: var(--foreground);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* ---- DATA ROW ---- */
+.data-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.8125rem;
+}
+
+.data-row dt {
+  color: var(--muted);
+}
+
+.data-row dd {
+  font-weight: 600;
+}
+
+/* ---- EMPTY STATE ---- */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted);
+}
+
+.empty-state svg {
+  margin: 0 auto 1rem;
+  opacity: 0.4;
+}
+
+.empty-state p {
+  font-size: 0.875rem;
+}
+
+/* ---- RESPONSIVE SIDEBAR ---- */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 3.5rem;
+    overflow: hidden;
+  }
+
+  .sidebar-brand span,
+  .sidebar-link span {
+    display: none;
+  }
+
+  .sidebar-brand {
+    justify-content: center;
+    padding: 1rem 0.5rem;
+  }
+
+  .sidebar-link {
+    justify-content: center;
+    padding: 0.625rem;
+  }
+}
