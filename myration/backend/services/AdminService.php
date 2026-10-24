@@ -102,7 +102,7 @@ final class AdminService implements ServiceInterface
         $beneficiaryId = (int) ($context['beneficiaryId'] ?? 0);
         if ($beneficiaryId < 1) throw new ApiException(422, 'Beneficiary ID is invalid.');
         $this->admin->assignBeneficiary($beneficiaryId, (int) $input['shopId']);
-        return ['message' => 'Beneficiary assigned to shop and sent for verification.'];
+        return ['message' => 'Beneficiary assigned to shop and sent to the shopkeeper for verification.'];
     }
 
     private function resolveComplaint(array $input, array $context): array
@@ -143,9 +143,10 @@ final class AdminService implements ServiceInterface
                 if ($stock['month_year'] === $previous) $previousStock = $stock;
             }
             $surplus = $previousStock ? max(0, (float) $previousStock['allocated_quantity'] - (float) $previousStock['distributed_quantity']) : 0.0;
-            $row['currentMonthAllocated'] = $currentStock ? (float) $currentStock['allocated_quantity'] : 0.0;
+            $currentAllocated = $currentStock ? (float) $currentStock['allocated_quantity'] : 0.0;
+            $row['currentMonthAllocated'] = $currentAllocated;
             $row['previousMonthSurplus'] = $surplus;
-            $row['suggestedShipment'] = max(0, (float) $row['totalDemand'] - $surplus);
+            $row['suggestedShipment'] = max(0, (float) $row['totalDemand'] - $currentAllocated - $surplus);
             $result[] = $row;
         }
         return $result;

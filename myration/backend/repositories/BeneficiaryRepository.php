@@ -211,7 +211,7 @@ final class BeneficiaryRepository extends AbstractRepository
                 // Stock arrival notification
                 $alerts[] = [
                     'id' => 'stock_arrival_' . md5($itemName),
-                    'message' => "📦 New Stock Arrived: Fresh stock of {$itemName} ({$allocated} {$unit}) is now available at your assigned ration shop.",
+                    'message' => "New stock of {$itemName} is available at your assigned ration shop.",
                     'alert_type' => 'info',
                     'is_read' => false,
                     'created_at' => $stk['updated_at'] ?? date('Y-m-d H:i:s'),
@@ -221,7 +221,7 @@ final class BeneficiaryRepository extends AbstractRepository
                 if ($remaining > 0 && ($remaining <= 50 || ($remaining / $allocated) <= 0.25)) {
                     $alerts[] = [
                         'id' => 'stock_low_' . md5($itemName),
-                        'message' => "⚠️ Limited Stock Alert: Only {$remaining} {$unit} of {$itemName} left at your shop. Please collect your ration soon!",
+                        'message' => "Limited stock alert for {$itemName} at your assigned ration shop. Please collect your ration soon.",
                         'alert_type' => 'warning',
                         'is_read' => false,
                         'created_at' => date('Y-m-d H:i:s'),
@@ -229,7 +229,7 @@ final class BeneficiaryRepository extends AbstractRepository
                 } elseif ($remaining == 0 && $distributed > 0) {
                     $alerts[] = [
                         'id' => 'stock_out_' . md5($itemName),
-                        'message' => "🚨 Out of Stock Alert: {$itemName} is currently out of stock at your assigned shop.",
+                        'message' => "{$itemName} is currently out of stock at your assigned ration shop.",
                         'alert_type' => 'danger',
                         'is_read' => false,
                         'created_at' => date('Y-m-d H:i:s'),

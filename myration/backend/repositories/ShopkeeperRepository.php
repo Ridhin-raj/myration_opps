@@ -69,6 +69,7 @@ final class ShopkeeperRepository extends AbstractRepository
             if (!$beneficiary) throw new ApiException(404, 'Pending beneficiary is not assigned to your shop.');
             if ($action === 'approve') {
                 $this->execute('UPDATE beneficiaries SET verified_by_shopkeeper = 1 WHERE user_id = ?', [$userId]);
+                $this->execute("UPDATE users SET approval_status = 'approved' WHERE id = ?", [$userId]);
             } else {
                 $this->execute("UPDATE users SET approval_status = 'rejected' WHERE id = ?", [$userId]);
             }
@@ -133,7 +134,7 @@ final class ShopkeeperRepository extends AbstractRepository
         $profile = $this->one(
             'SELECT b.user_id FROM beneficiaries b JOIN users u ON u.id = b.user_id
              WHERE b.user_id = ? AND b.assigned_shop_id = ? AND b.verified_by_shopkeeper = 1
-               AND b.verified_by_admin = 1 AND u.approval_status = \'approved\'',
+               AND u.approval_status = \'approved\'',
             [$beneficiaryId, $shopId]
         );
         if (!$profile) throw new ApiException(403, 'Beneficiary is not verified and assigned to your shop.');
@@ -164,7 +165,7 @@ final class ShopkeeperRepository extends AbstractRepository
                 'SELECT b.user_id, c.id AS category_id FROM beneficiaries b
                  JOIN users u ON u.id = b.user_id JOIN ration_categories c ON c.id = b.category_id
                  WHERE b.user_id = ? AND b.assigned_shop_id = ? AND b.verified_by_shopkeeper = 1
-                   AND b.verified_by_admin = 1 AND u.approval_status = \'approved\' FOR UPDATE',
+                   AND u.approval_status = \'approved\' FOR UPDATE',
                 [$beneficiaryId, $shopId]
             );
             if (!$beneficiary) throw new ApiException(403, 'Beneficiary eligibility could not be verified for this shop.');
@@ -221,7 +222,7 @@ final class ShopkeeperRepository extends AbstractRepository
     public function stockHistory(int $shopId): array
     {
         return $this->all(
-            "SELECT sm.id, i.item_name, UPPER(sm.movement_type) AS action_type, sm.quantity,
+            "SELECT sm.id, i.item_name, i.unit, UPPER(sm.movement_type) AS action_type, sm.quantity,
                     u.name AS user_name, sm.created_at AS timestamp
              FROM stock_movements sm JOIN ration_items i ON i.id = sm.item_id
              LEFT JOIN users u ON u.id = sm.user_id WHERE sm.shop_id = ?
@@ -257,9 +258,9 @@ final class ShopkeeperRepository extends AbstractRepository
         $this->execute('UPDATE bookings SET status = ? WHERE id = ?', [$status, $bookingId]);
     }
 
-    public function receiveStock(int $shopId, int $actorId, int $assignmentId): void
+    public function receiveStock(int $shopId, int $actorId, int $assignmentId): array
     {
-        $this->transaction(function () use ($shopId, $actorId, $assignmentId): void {
+        return $this->transaction(function () use ($shopId, $actorId, $assignmentId): array {
             $assignment = $this->one(
                 "SELECT a.id, a.item_id, a.quantity, a.month_year, i.item_name, i.unit
                  FROM stock_assignments a JOIN ration_items i ON i.id = a.item_id
@@ -274,6 +275,15 @@ final class ShopkeeperRepository extends AbstractRepository
                 [$shopId, (int) $assignment['item_id'], $assignment['month_year'], (float) $assignment['quantity']]
             );
             $this->movement($shopId, (int) $assignment['item_id'], $actorId, 'added', (float) $assignment['quantity']);
+            $inventory = $this->one(
+                'SELECT ss.id, i.item_name AS item, ss.allocated_quantity AS allocated,
+                        ss.distributed_quantity AS distributed,
+                        GREATEST(ss.allocated_quantity - ss.distributed_quantity, 0) AS remaining
+                 FROM shop_stock ss JOIN ration_items i ON i.id = ss.item_id
+                 WHERE ss.shop_id = ? AND ss.item_id = ? AND ss.month_year = ?',
+                [$shopId, (int) $assignment['item_id'], $assignment['month_year']]
+            );
+            return $inventory ?: [];
         });
     }
 

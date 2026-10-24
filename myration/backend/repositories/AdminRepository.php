@@ -15,24 +15,14 @@ final class AdminRepository extends AbstractRepository
     public function dashboard(): array
     {
         $users = $this->one('SELECT COUNT(*) AS count FROM users');
-        $pendingUsers = $this->one("SELECT COUNT(*) AS count FROM users WHERE approval_status = 'pending'");
         $pendingShops = $this->one("SELECT COUNT(*) AS count FROM shops WHERE approval_status = 'pending'");
         $complaints = $this->one("SELECT COUNT(*) AS count FROM complaints WHERE status = 'pending'");
-        return ['totalUsers' => (int) $users['count'], 'pendingApprovals' => (int) $pendingUsers['count'] + (int) $pendingShops['count'], 'openComplaints' => (int) $complaints['count']];
+        return ['totalUsers' => (int) $users['count'], 'pendingApprovals' => (int) $pendingShops['count'], 'openComplaints' => (int) $complaints['count']];
     }
 
     public function pending(): array
     {
-        $users = $this->all(
-            "SELECT u.id, u.username, u.name, u.mobile, u.aadhaar, u.created_at,
-                    b.dob, b.gender, b.ration_card_no, c.code AS card_type, b.family_members,
-                    b.ration_card_image, b.state, b.district, b.taluk, b.village, b.pincode,
-                    s.id AS assigned_shop_id, s.shop_name AS assigned_shop_name,
-                    s.district AS assigned_shop_district, 'User' AS type
-             FROM users u JOIN beneficiaries b ON b.user_id = u.id JOIN ration_categories c ON c.id = b.category_id
-             LEFT JOIN shops s ON s.id = b.assigned_shop_id
-             WHERE u.approval_status = 'pending' AND b.verified_by_shopkeeper = 1 AND b.verified_by_admin = 0"
-        );
+        $users = [];
         $shops = $this->all(
             "SELECT s.id, u.username, u.name, u.mobile, u.aadhaar, s.shop_name, s.license_no,
                     s.capacity, s.state, s.district, s.taluk, s.village, s.pincode,
@@ -68,15 +58,7 @@ final class AdminRepository extends AbstractRepository
         $this->transaction(function () use ($type, $id, $action): void {
             $status = $action === 'approve' ? 'approved' : 'rejected';
             if ($type === 'user') {
-                $user = $this->one(
-                    "SELECT u.id FROM users u JOIN beneficiaries b ON b.user_id = u.id
-                     WHERE u.id = ? AND u.approval_status = 'pending' AND b.verified_by_shopkeeper = 1 FOR UPDATE",
-                    [$id]
-                );
-                if (!$user) throw new ApiException(404, 'Pending beneficiary was not found.');
-                $this->execute('UPDATE users SET approval_status = ? WHERE id = ?', [$status, $id]);
-                $this->execute('UPDATE beneficiaries SET verified_by_admin = ? WHERE user_id = ?', [$action === 'approve', $id]);
-                return;
+                throw new ApiException(422, 'Beneficiaries are verified by their assigned shopkeeper only.');
             }
             if ($type !== 'shopkeeper') throw new ApiException(422, 'Registration type must be user or shopkeeper.');
             $shop = $this->one("SELECT owner_user_id FROM shops WHERE id = ? AND approval_status = 'pending' FOR UPDATE", [$id]);
@@ -174,7 +156,17 @@ final class AdminRepository extends AbstractRepository
                 'resolve' => 'resolved', 'dismiss' => 'dismissed', 'warn' => 'warning_issued',
                 default => throw new ApiException(422, 'Action must be resolve, dismiss, or warn.'),
             };
+            $complaint = $this->one('SELECT beneficiary_user_id FROM complaints WHERE id = ? FOR UPDATE', [$id]);
             $this->execute('UPDATE complaints SET status = ?, admin_response = ?, resolved_by_user_id = ? WHERE id = ?', [$status, $response ?: null, $adminId, $id]);
+            $statusText = str_replace('_', ' ', $status);
+            $message = 'Your complaint #' . $id . ' has been updated: ' . $statusText . '.';
+            if ($response !== '') {
+                $message .= ' Admin response: ' . $response;
+            }
+            $this->execute(
+                "INSERT INTO notifications (user_id, message, notification_type) VALUES (?, ?, 'info')",
+                [(int) $complaint['beneficiary_user_id'], $message]
+            );
             if ($warning || $action === 'warn') {
                 $owner = $this->one('SELECT owner_user_id FROM shops WHERE id = ?', [(int) $complaint['shop_id']]);
                 if ($owner) {
@@ -224,7 +216,7 @@ final class AdminRepository extends AbstractRepository
                     q.unit_price, SUM(CASE WHEN u.id IS NOT NULL THEN COALESCE(b.family_members, 1) ELSE 0 END) AS beneficiary_count
              FROM ration_categories c JOIN category_quotas q ON q.category_id = c.id
              JOIN ration_items i ON i.id = q.item_id
-             LEFT JOIN beneficiaries b ON b.category_id = c.id AND b.assigned_shop_id = ? AND b.verified_by_admin = 1
+             LEFT JOIN beneficiaries b ON b.category_id = c.id AND b.assigned_shop_id = ? AND b.verified_by_shopkeeper = 1
              LEFT JOIN users u ON u.id = b.user_id AND u.approval_status = \'approved\'
              WHERE i.is_active = 1 GROUP BY c.id, c.code, i.id, i.item_name, i.unit, q.monthly_quantity, q.unit_price',
             [$shopId]
@@ -342,7 +334,7 @@ final class AdminRepository extends AbstractRepository
             $this->execute('UPDATE complaints SET shopkeeper_response = ?, shopkeeper_response_by_user_id = ? WHERE id = ? AND shop_id = ?', [$response, $userId, $complaintId, $shopId]);
             $this->execute(
                 "INSERT INTO notifications (user_id, message, notification_type) VALUES (?, ?, 'info')",
-                [(int) $complaint['beneficiary_user_id'], 'Your shop has responded to complaint #' . $complaintId . '.']
+                [(int) $complaint['beneficiary_user_id'], 'Your complaint #' . $complaintId . ' has a shopkeeper response: ' . $response]
             );
         });
     }

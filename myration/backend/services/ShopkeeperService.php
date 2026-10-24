@@ -59,7 +59,7 @@ final class ShopkeeperService implements ServiceInterface
         if (!in_array($action, ['approve', 'reject'], true)) throw new ApiException(422, 'Action must be approve or reject.');
         if ($beneficiaryId < 1) throw new ApiException(422, 'Beneficiary ID is invalid.');
         $this->shops->verifyBeneficiary($shopId, $beneficiaryId, $action);
-        return ['message' => $action === 'approve' ? 'User verified. Forwarded to admin for final approval.' : 'User registration rejected.'];
+        return ['message' => $action === 'approve' ? 'Beneficiary verified successfully.' : 'Beneficiary registration rejected.'];
     }
 
     private function addStock(int $shopId, int $actorId, array $input, int $stockId): array
@@ -102,8 +102,8 @@ final class ShopkeeperService implements ServiceInterface
         if (filter_var($input['assignmentId'] ?? null, FILTER_VALIDATE_INT) === false || (int) $input['assignmentId'] < 1) {
             throw new ApiException(422, 'Assignment ID is required.');
         }
-        $this->shops->receiveStock($shopId, $actorId, (int) $input['assignmentId']);
-        return ['message' => 'Stock received successfully.'];
+        $inventory = $this->shops->receiveStock($shopId, $actorId, (int) $input['assignmentId']);
+        return ['message' => 'Stock received successfully.', 'inventory' => $inventory];
     }
 
     private function markAlertRead(int $userId, int $shopId, int $notificationId): array

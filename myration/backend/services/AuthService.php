@@ -58,7 +58,7 @@ final class AuthService implements ServiceInterface
             throw new ApiException(401, 'Invalid username or password');
         }
         if ($user['status'] !== 'approved') {
-            throw new ApiException(403, $user['status'] === 'rejected' ? 'Your account registration was rejected.' : 'Your account is not yet approved. Please wait for admin approval.');
+            throw new ApiException(403, $user['status'] === 'rejected' ? 'Your account registration was rejected.' : 'Your account is not yet verified by your assigned shopkeeper.');
         }
         if ($user['role'] === 'shopkeeper' && $this->users->shopApproval((int) $user['id']) !== 'approved') {
             throw new ApiException(403, 'Your shop registration is still pending admin approval.');
@@ -105,7 +105,7 @@ final class AuthService implements ServiceInterface
         $input['selectedShop'] = $selectedShop;
         $input['cardType'] = $cardType;
         $userId = $this->users->createBeneficiary($input, $imagePath);
-        return new HttpResult(['message' => 'Registration submitted successfully. Pending shopkeeper verification.', 'userId' => $userId, 'username' => $input['username']], 201);
+        return new HttpResult(['message' => 'Registration submitted successfully. Pending verification by your assigned shopkeeper.', 'userId' => $userId, 'username' => $input['username']], 201);
     }
 
     private function registerShopkeeper(array $input): HttpResult
