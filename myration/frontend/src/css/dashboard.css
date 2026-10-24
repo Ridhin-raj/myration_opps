@@ -131,6 +131,14 @@
   overflow-y: auto;
 }
 
+/* Keep long ration-quota lists usable inside the collection modal. */
+.collect-quota-list {
+  max-height: min(55vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
+}
+
 /* ---- USER DASHBOARD (NO SIDEBAR) ---- */
 .user-dashboard {
   min-height: 100vh;

@@ -176,8 +176,8 @@ const UserRegister = () => {
             <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Application Submitted!</h2>
             <span className="badge badge-warning" style={{ marginBottom: "1rem" }}>Pending Verification</span>
             <p className="text-sm text-muted" style={{ marginBottom: "1rem" }}>
-              Your registration has been submitted. The shopkeeper will verify your documents
-              and forward to the admin for final approval.
+              Your registration has been submitted. The shopkeeper will verify your documents.
+              After approval, your account will be ready to use.
             </p>
             {regData && (
               <div className="alert alert-info" style={{ textAlign: "left", fontSize: "0.8125rem" }}>

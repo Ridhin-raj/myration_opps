@@ -14,6 +14,7 @@ const ShopkeeperDashboard = () => {
 
   // Shop status
   const [shopOpen, setShopOpen] = useState(true);
+  const [shopStatusLoading, setShopStatusLoading] = useState(false);
   const [stats, setStats] = useState({ pending: 0, verified: 0, stockItems: 0 });
 
   // Pending verifications
@@ -42,7 +43,7 @@ const ShopkeeperDashboard = () => {
         ]);
 
         setStats(dash.stats || { pending: 0, verified: 0, stockItems: 0 });
-        setShopOpen(dash.shop?.is_open ?? true);
+        setShopOpen(Boolean(Number(dash.shop?.is_open ?? 1)));
         setPendingApps(pending);
         setVerifiedList(verified);
         setStock(stk);
@@ -73,9 +74,15 @@ const ShopkeeperDashboard = () => {
     setCollectLoading(true);
     try {
       const q = await getBeneficiaryQuotaAPI(beneficiary.id);
-      setBQuota(q);
-    } catch {
-      alert("Failed to load user quota.");
+      setBQuota(q.map((quota) => ({
+        ...quota,
+        total_quota: Number(quota.total_quota ?? 0),
+        remaining_quota: Number(quota.remaining_quota ?? 0),
+        price: Number(quota.price ?? 0),
+        family_members: Number(quota.family_members ?? 1)
+      })));
+    } catch (err) {
+      alert(err.message || "Failed to load user quota.");
     } finally {
       setCollectLoading(false);
     }
@@ -86,7 +93,7 @@ const ShopkeeperDashboard = () => {
     try {
       await collectRationAPI({ userId: collectUser.id, itemName, amount });
       // Update local quota state
-      setBQuota(prev => prev.map(q => q.item_name === itemName ? { ...q, remaining_quota: q.remaining_quota - amount } : q));
+      setBQuota(prev => prev.map(q => q.item_name === itemName ? { ...q, remaining_quota: Number(q.remaining_quota) - Number(amount) } : q));
       // Refresh stock and history
       const [stk, hist] = await Promise.all([
         getShopkeeperStock(),
@@ -110,18 +117,26 @@ const ShopkeeperDashboard = () => {
   };
 
   const handleToggleShop = async () => {
+    if (shopStatusLoading) return;
     const newStatus = !shopOpen;
-    try { 
-      await toggleShopStatus(newStatus); 
+    setShopStatusLoading(true);
+    try {
+      await toggleShopStatus(newStatus);
       setShopOpen(newStatus);
-    } catch { 
-      alert("Failed to toggle shop status.");
+    } catch (err) {
+      alert(err.message || "Failed to toggle shop status.");
+    } finally {
+      setShopStatusLoading(false);
     }
   };
 
   const handleUpdateStock = async (itemId) => {
     if (!addQty) return;
-    const qty = parseInt(addQty, 10);
+    const qty = Number(addQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      alert("Enter a valid stock quantity.");
+      return;
+    }
     try { 
       await updateStock(itemId, qty); 
       setStock((prev) =>
@@ -138,7 +153,11 @@ const ShopkeeperDashboard = () => {
 
   const handleSellStock = async (itemId) => {
     if (!sellQty) return;
-    const qty = parseInt(sellQty, 10);
+    const qty = Number(sellQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      alert("Enter a valid stock quantity.");
+      return;
+    }
     try { 
       await sellStock(itemId, qty); 
       setStock((prev) =>
@@ -155,8 +174,13 @@ const ShopkeeperDashboard = () => {
 
   const handleReceiveStock = async (id) => {
     try {
-      await receiveStockAPI(id);
-      
+      const result = await receiveStockAPI(id);
+      const received = result.inventory;
+      if (received?.id) {
+        setStock((current) => current.some((item) => item.id === received.id)
+          ? current.map((item) => item.id === received.id ? { ...item, ...received } : item)
+          : [...current, received]);
+      }
       const [stk, hist, assigned] = await Promise.all([
         getShopkeeperStock(),
         getShopkeeperStockHistoryAPI(),
@@ -165,10 +189,9 @@ const ShopkeeperDashboard = () => {
       setStock(stk);
       setStockHistory(hist);
       setAssignedStock(assigned);
-      
       alert("Stock received successfully!");
-    } catch {
-      alert("Failed to receive stock.");
+    } catch (err) {
+      alert(err.message || "Failed to receive stock.");
     }
   };
 
@@ -241,7 +264,7 @@ const ShopkeeperDashboard = () => {
               <div className="shop-status">
                 <span className={`status-dot ${shopOpen ? "open" : "closed"}`} />
                 <span style={{ fontWeight: 700, flex: 1 }}>Shop is {shopOpen ? "Open" : "Closed"}</span>
-                <input type="checkbox" className="toggle-switch" checked={shopOpen} onChange={handleToggleShop} />
+                <input type="checkbox" className="toggle-switch" checked={shopOpen} disabled={shopStatusLoading} onChange={handleToggleShop} />
               </div>
 
               <div className="grid-3">
@@ -269,7 +292,7 @@ const ShopkeeperDashboard = () => {
             <div className="card">
               <div className="card-header">
                 <h2 className="card-title">Pending User Verifications</h2>
-                <p className="card-subtitle">Verify user documents and forward to admin for final approval</p>
+                <p className="card-subtitle">Verify beneficiary documents to approve registration</p>
               </div>
               <div className="card-body">
                 {pendingApps.length === 0 ? (
@@ -352,23 +375,28 @@ const ShopkeeperDashboard = () => {
                         <th>Total Distributed</th>
                         <th>Current Balance</th>
                         <th style={{ textAlign: 'right' }}>Stock Health</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
+                      {stock.length === 0 && (
+                        <tr><td colSpan="6"><div className="empty-state"><Package size={30} /><p>No inventory available for this month</p></div></td></tr>
+                      )}
                       {stock.map((s) => {
                         const remaining = Number(s.allocated) - Number(s.distributed);
-                        const pct = s.allocated > 0 ? Math.round((remaining / s.allocated) * 100) : 0;
+                        const pct = Number(s.allocated) > 0 ? Math.round((remaining / Number(s.allocated)) * 100) : 0;
                         const level = pct > 50 ? "good" : pct > 20 ? "low" : "critical";
+                        const unit = s.unit || "kg";
                         return (
                           <tr key={s.id} className={level === "critical" ? "table-row-danger" : level === "low" ? "table-row-warning" : ""}>
                             <td style={{ fontWeight: 700 }}>
                               {s.item}
                               {level === "critical" && <span className="badge badge-danger ml-1" style={{ fontSize: '10px' }}>LOW</span>}
                             </td>
-                            <td>{s.allocated} kg</td>
-                            <td>{s.distributed} kg</td>
+                            <td>{Number(s.allocated).toFixed(1)} {unit}</td>
+                            <td>{Number(s.distributed).toFixed(1)} {unit}</td>
                             <td style={{ fontWeight: 700, color: level === "critical" ? "var(--primary)" : "inherit" }}>
-                              {remaining.toFixed(1)} kg
+                              {remaining.toFixed(1)} {unit}
                             </td>
                             <td style={{ textAlign: 'right' }}>
                               <div className="flex items-center justify-end gap-2">
@@ -497,7 +525,7 @@ const ShopkeeperDashboard = () => {
                                     </td>
                                     <td>
                                       <span style={{ fontWeight: 700, fontSize: '1rem', color: h.action_type === 'ADDED' ? 'var(--success)' : 'var(--primary)' }}>
-                                        {h.action_type === 'ADDED' ? '+' : '-'}{h.quantity} kg
+                                        {h.action_type === 'ADDED' ? '+' : '-'}{Number(h.quantity).toFixed(1)} {h.unit || 'kg'}
                                       </span>
                                     </td>
                                     <td className="text-sm">
@@ -600,7 +628,7 @@ const ShopkeeperDashboard = () => {
             )}
             <div className="modal-actions">
               <button className="btn btn-danger" onClick={() => handleVerify(viewApp.id, "reject")}>Reject</button>
-              <button className="btn btn-success" onClick={() => handleVerify(viewApp.id, "approve")}>Approve & Forward to Admin</button>
+              <button className="btn btn-success" onClick={() => handleVerify(viewApp.id, "approve")}>Approve Beneficiary</button>
             </div>
           </div>
         </div>
@@ -621,7 +649,7 @@ const ShopkeeperDashboard = () => {
             ) : bQuota.length === 0 ? (
               <div className="empty-state">No quota definition found for this user.</div>
             ) : (
-              <div className="quota-list">
+              <div className="quota-list collect-quota-list">
                 {bQuota.map((q) => (
                   <QuotaCollectRow 
                     key={q.item_name}

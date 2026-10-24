@@ -491,7 +491,7 @@ const UserDashboard = () => {
           <div className="card">
             <div className="card-header">
               <h3 className="card-title">🔔 Notifications & Stock Alerts</h3>
-              <p className="card-subtitle">Real-time alerts regarding new stock arrivals and low inventory at your assigned shop</p>
+              <p className="card-subtitle">Stock availability and updates to your complaints</p>
             </div>
             <div className="card-body">
               {alerts.length === 0 ? (

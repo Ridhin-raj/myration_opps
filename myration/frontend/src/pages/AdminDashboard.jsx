@@ -176,8 +176,8 @@ const AdminDashboard = () => {
     try {
       const data = await getShopDemandAPI(shop.id);
       setSelectedDemand({ shop, loading: false, data });
-    } catch {
-      alert("Failed to analyze demand.");
+    } catch (err) {
+      alert(err.message || "Failed to analyze demand.");
       setSelectedDemand(null);
     }
   };
@@ -282,7 +282,7 @@ const AdminDashboard = () => {
           {section === "approvals" && (
             <div className="card">
               <div className="card-header">
-                <h2 className="card-title">Final Approvals</h2>
+                <h2 className="card-title">Pending Verifications</h2>
                 <p className="card-subtitle">Approve or reject user and shopkeeper registrations</p>
               </div>
               <div className="card-body">
@@ -618,10 +618,10 @@ const AdminDashboard = () => {
 
                 <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
                   <button className="btn btn-ghost" onClick={() => setSelectedDemand(null)}>Cancel</button>
-                  <button 
-                    className="btn btn-success" 
+                  <button
+                    className="btn btn-success"
                     onClick={handleAllocateStock}
-                    disabled={allocationLoading}
+                    disabled={allocationLoading || !selectedDemand.data.some((item) => Number(item.suggestedShipment) > 0)}
                   >
                     {allocationLoading ? "Allocating..." : "Allocate Full Monthly Demand"}
                   </button>
